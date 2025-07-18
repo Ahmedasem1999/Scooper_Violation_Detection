@@ -131,3 +131,5 @@ cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 ### Visual Indicators
 - **Green Rectangle**: Normal monitoring region
 - **Red Rectangle**: Active violation area (future enhancement)
+  
+For system-wide documentation, see the [main README](../../README.md).
