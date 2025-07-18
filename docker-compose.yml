@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"  # AMQP port
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  frame_reader:
+    build: .
+    depends_on:
+      rabbitmq
+    volumes:
+      - ./Test_Data:/app/Test_Data
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    command: python3 src/frame_reader/main.py
+    restart: unless-stopped
+
+  detection_service:
+    build: .
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./Test_Data:/app/Test_Data
+      - ./data:/app/data
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    command: python3 src/detection_service/main.py
+    restart: unless-stopped
+
+  web_app:
+    build: .
+    depends_on:
+      - detection_service
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+    command: streamlit run src/App/app.py --server.port=8501 --server.address=0.0.0.0
+    restart: unless-stopped
+
+volumes:
+  rabbitmq_data:
